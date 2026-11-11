@@ -35,6 +35,11 @@
 
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
+/* يمنع التكبير بالنقر المزدوج عند الضغط السريع المتتالي، ويبقى التكبير بإصبعين ممكنًا */
+html, body, a, button, input, textarea, label { touch-action: manipulation; }
+
+.contents { display: contents; }
+
 body {
   margin: 0;
   background: var(--paper);
@@ -147,12 +152,17 @@ b, strong { font-weight: 700; }
 }
 
 /* ---------- المحتوى ---------- */
-.main {
-  padding-top: 24px;
-  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 32px);
-  outline: none;
+.main { padding-top: 24px; padding-bottom: 40px; outline: none; }
+@media (min-width: 760px) { .main { padding-top: 40px; padding-bottom: 56px; } }
+
+/* التذييل يترك مكانًا لشريط التنقل السفلي على الهاتف */
+.foot {
+  padding-top: 16px;
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 20px);
+  border-top: var(--b) solid var(--ink);
+  font-size: var(--fs-s);
 }
-@media (min-width: 760px) { .main { padding-top: 40px; padding-bottom: 64px; } }
+@media (min-width: 760px) { .foot { padding-bottom: 24px; } }
 
 .head { margin-bottom: 20px; }
 .eyebrow {

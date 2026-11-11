@@ -49,6 +49,15 @@
   const WEEKS = D.weeks.length;
   const listIds = Object.keys(D.shopping.lists);
 
+  /* الأصناف الموجودة فعلًا في كل قائمة؛ أي اختيار محفوظ لصنف حُذف من data.js يُتجاهل */
+  const validIds = {};
+  listIds.forEach(k => {
+    const set = new Set();
+    D.shopping.lists[k].sections.forEach(sec => sec.items.forEach(it => set.add(sec.name + '|' + it[0])));
+    D.shopping.spices.items.forEach(x => set.add(D.shopping.spices.title + '|' + x));
+    validIds[k] = set;
+  });
+
   const typeOf = r => typeByKey[r.type] || { label: '', kcal: 0 };
   const kcalOf = r => r.kcal || typeOf(r).kcal;
 
@@ -192,9 +201,21 @@
     return state.cook[id] || (state.cook[id] = { ing: new Set(), steps: new Set() });
   }
 
+  function cookReset(id) {
+    const c = cookOf(id);
+    return c.ing.size + c.steps.size
+      ? `<button type="button" class="link" data-action="reset-cook" data-r="${id}" data-k="reset-cook">مسح العلامات</button>`
+      : '';
+  }
+
+  /* تبديل سطر واحد في مكانه بدل إعادة رسم الصفحة */
+  function setPressed(el, on) {
+    el.classList.toggle('is-on', on);
+    el.setAttribute('aria-pressed', String(on));
+  }
+
   function viewRecipe(r) {
     const c = cookOf(r.id);
-    const marked = c.ing.size + c.steps.size;
     const meta = [typeOf(r).label, kcalOf(r) + ' سعرة'];
     if (r.page) meta.push('ص ' + r.page);
 
@@ -207,7 +228,7 @@
         ${r.note ? `<p class="note">${esc(r.note)}</p>` : ''}
         <div class="actions">
           <button type="button" class="btn btn--sm" data-action="share" data-what="recipe" data-id="${r.id}" data-k="share">مشاركة الوصفة</button>
-          ${marked ? `<button type="button" class="link" data-action="reset-cook" data-r="${r.id}" data-k="reset-cook">مسح العلامات</button>` : ''}
+          <span class="contents" id="cook-reset">${cookReset(r.id)}</span>
         </div>
       </header>
 
@@ -233,7 +254,7 @@
   }
 
   /* ========== عرض: التسوق — اختيار الأصناف ثم إرسالها عبر واتساب ========== */
-  const selOf = id => new Set(state.sel[id] || []);
+  const selOf = id => new Set((state.sel[id] || []).filter(x => validIds[id] && validIds[id].has(x)));
   const spiceId = name => D.shopping.spices.title + '|' + name;
 
   function pickItem(listId, itemId, name, qty, sel, k) {
@@ -280,6 +301,20 @@
         : '<span class="btn" aria-disabled="true">إرسال عبر واتساب</span>'}`;
   }
 
+  function shopActions(id) {
+    const any = selOf(id).size > 0 || (state.extra[id] || '').trim() !== '';
+    return `<button type="button" class="link" data-action="pick-all" data-key="${id}" data-k="pick-all">اختيار الكل</button>
+      ${any ? `<button type="button" class="link" data-action="pick-none" data-key="${id}" data-k="pick-none">مسح الاختيار</button>` : ''}`;
+  }
+
+  /* تحديث العدّاد وزر الإرسال فقط، دون إعادة رسم القائمة */
+  function updateShopBars(id) {
+    const bar = document.getElementById('sendbar');
+    if (bar) bar.innerHTML = sendBar(id);
+    const actions = document.getElementById('shop-actions');
+    if (actions) actions.innerHTML = shopActions(id);
+  }
+
   function viewShop(id) {
     const list = D.shopping.lists[id];
     const sel = selOf(id);
@@ -299,10 +334,7 @@
       ${segNav('shop', listIds.map(k => [k, D.shopping.lists[k].label]), id, 'الأسبوعان')}
       <p class="hint mt-s">اختر ما يجب شراؤه، ثم اضغط «إرسال عبر واتساب». ${esc(D.shopping.note)}</p>
 
-      <div class="actions">
-        <button type="button" class="link" data-action="pick-all" data-key="${id}" data-k="pick-all">اختيار الكل</button>
-        ${sel.size || (state.extra[id] || '').trim() ? `<button type="button" class="link" data-action="pick-none" data-key="${id}" data-k="pick-none">مسح الاختيار</button>` : ''}
-      </div>
+      <div class="actions" id="shop-actions">${shopActions(id)}</div>
 
       <div class="shop">${sections}</div>
 
@@ -510,14 +542,16 @@
         break;
 
       case 'ing':
-        toggleIn(cookOf(el.dataset.r).ing, +el.dataset.i);
-        refresh();
+      case 'step': {
+        const c = cookOf(el.dataset.r);
+        const set = el.dataset.action === 'ing' ? c.ing : c.steps;
+        const i = +el.dataset.i;
+        toggleIn(set, i);
+        setPressed(el, set.has(i));
+        const reset = document.getElementById('cook-reset');
+        if (reset) reset.innerHTML = cookReset(el.dataset.r);
         break;
-
-      case 'step':
-        toggleIn(cookOf(el.dataset.r).steps, +el.dataset.i);
-        refresh();
-        break;
+      }
 
       case 'reset-cook':
         delete state.cook[el.dataset.r];
@@ -525,11 +559,13 @@
         break;
 
       case 'pick': {
-        const set = selOf(el.dataset.key);
+        const key = el.dataset.key;
+        const set = selOf(key);
         toggleIn(set, el.dataset.id);
-        state.sel[el.dataset.key] = Array.from(set);
+        state.sel[key] = Array.from(set);
         store.set('sel', state.sel);
-        refresh();
+        setPressed(el, set.has(el.dataset.id));
+        updateShopBars(key);
         break;
       }
 
@@ -577,8 +613,7 @@
     } else if (t.id === 'extra') {
       state.extra[t.dataset.key] = t.value;
       store.set('extra', state.extra);
-      const bar = document.getElementById('sendbar');
-      if (bar) bar.innerHTML = sendBar(t.dataset.key);
+      updateShopBars(t.dataset.key);
     } else if (t.id === 'phone') {
       state.phone = t.value;
       store.set('phone', state.phone);
