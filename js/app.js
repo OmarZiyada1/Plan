@@ -301,7 +301,7 @@
 
       <div class="actions">
         <button type="button" class="link" data-action="pick-all" data-key="${id}" data-k="pick-all">اختيار الكل</button>
-        ${sel.size ? `<button type="button" class="link" data-action="pick-none" data-key="${id}" data-k="pick-none">مسح الاختيار</button>` : ''}
+        ${sel.size || (state.extra[id] || '').trim() ? `<button type="button" class="link" data-action="pick-none" data-key="${id}" data-k="pick-none">مسح الاختيار</button>` : ''}
       </div>
 
       <div class="shop">${sections}</div>
@@ -545,7 +545,9 @@
 
       case 'pick-none':
         delete state.sel[el.dataset.key];
+        delete state.extra[el.dataset.key];
         store.set('sel', state.sel);
+        store.set('extra', state.extra);
         refresh();
         break;
 
