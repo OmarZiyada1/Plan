@@ -28,6 +28,12 @@ window.PLAN_DATA = {
     ]
   },
 
+  /* القيم الغذائية: لكل وصفة kcal وprotein وcarbs وfat بالغرام */
+  nutrition: {
+    note: 'الأرقام تقديرية محسوبة من أوزان المكونات في كل وصفة.',
+    target: { split: '40/40/20', protein: 180, carbs: 180, fat: 40 }
+  },
+
   /* [فطور، غداء] لكل يوم */
   weeks: [
     [['b1', 'l1'], ['b2', 'l2'], ['b3', 'l3'], ['b4', 'l4'], ['b5', 'l5'], ['b6', 'l6'], ['b7', 'l7']],
@@ -40,6 +46,7 @@ window.PLAN_DATA = {
     /* ---------- الفطور ---------- */
     {
       id: 'b1', code: 'ف1', type: 'breakfast', name: 'شوفان باللبن والموز', page: '40',
+      kcal: 740, protein: 27, carbs: 102, fat: 25,
       prep: 'يُترك في الثلاجة ساعتين على الأقل، ويمكن تحضيره من الليلة السابقة.',
       ingredients: [
         '80 غ شوفان كامل الحبة',
@@ -58,6 +65,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'b2', code: 'ف2', type: 'breakfast', name: 'بيض مسلوق مع توست زبدة الفول السوداني والعسل',
+      kcal: 750, protein: 40, carbs: 76, fat: 34,
       ingredients: [
         '4 بيضات',
         'شريحتا توست أسمر (60 غ)',
@@ -77,6 +85,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'b3', code: 'ف3', type: 'breakfast', name: 'قرنبيط مشوي بالأعشاب واللبن مع خبز',
+      kcal: 750, protein: 26, carbs: 93, fat: 35,
       note: 'الخبز إضافة لإكمال السعرات.',
       ingredients: [
         '500 غ قرنبيط مقطع زهرات',
@@ -95,8 +104,9 @@ window.PLAN_DATA = {
       ]
     },
     {
-      id: 'b4', code: 'ف4', type: 'breakfast', name: 'توست البيض والجزر بالموتزاريلا مع فاكهة', kcal: 770,
-      note: 'القطعتان معًا نحو 620 سعرة، والفاكهة والطماطم تكملان الفطور إلى نحو 770 سعرة.',
+      id: 'b4', code: 'ف4', type: 'breakfast', name: 'توست البيض والجزر بالموتزاريلا مع فاكهة',
+      kcal: 740, protein: 48, carbs: 70, fat: 32,
+      note: 'الفاكهة والطماطم إضافة لإكمال السعرات.',
       ingredients: [
         '3 بيضات',
         'ملعقة جبنة دهن لايت (20 غ)',
@@ -118,6 +128,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'b5', code: 'ف5', type: 'breakfast', name: 'شوفان بالزبادي والرمان', page: '44',
+      kcal: 740, protein: 42, carbs: 84, fat: 27,
       prep: 'يُترك في الثلاجة ليلة كاملة أو ساعتين على الأقل.',
       ingredients: [
         '250 غ زبادي يوناني قليل الدسم (2%)',
@@ -135,8 +146,8 @@ window.PLAN_DATA = {
       ]
     },
     {
-      id: 'b6', code: 'ف6', type: 'breakfast', name: 'بان كيك الشوفان', kcal: 830,
-      note: 'مع الكريمة المخفوقة يصير هذا الفطور نحو 830 سعرة، ومجموع يومه نحو 1880 سعرة.',
+      id: 'b6', code: 'ف6', type: 'breakfast', name: 'بان كيك الشوفان',
+      kcal: 820, protein: 36, carbs: 96, fat: 32,
       ingredients: [
         'كوب شوفان مطحون (90 غ)',
         'بيضتان',
@@ -157,6 +168,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'b7', code: 'ف7', type: 'breakfast', name: 'جبنة قريش بالخضار', page: '42',
+      kcal: 750, protein: 53, carbs: 66, fat: 32,
       ingredients: [
         '250 غ جبنة قريش قليلة الدسم (Hüttenkäse) مصفّاة جيدًا',
         'جزرة صغيرة مبشورة (50 غ)',
@@ -177,6 +189,7 @@ window.PLAN_DATA = {
     /* ---------- الغداء ---------- */
     {
       id: 'l1', code: 'غ1', type: 'lunch', name: 'كريسبي تشيكن ألفريدو', page: '2 و3',
+      kcal: 1060, protein: 95, carbs: 110, fat: 25,
       note: 'الكمية هنا ضعف حصة الكتاب تقريبًا.',
       ingredients: [
         '250 غ صدر دجاج (قطعتان رقيقتان)',
@@ -202,6 +215,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'l2', code: 'غ2', type: 'lunch', name: 'فاهيتا الدجاج مع أرز', page: '11',
+      kcal: 1030, protein: 74, carbs: 137, fat: 19,
       note: 'الأرز واللبن إضافة لإكمال السعرات.',
       ingredients: [
         '250 غ صدر دجاج مقطع شرائح',
@@ -221,6 +235,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'l3', code: 'غ3', type: 'lunch', name: 'حواوشي', page: '19',
+      kcal: 1060, protein: 77, carbs: 99, fat: 39,
       note: 'الكمية رغيفان.',
       ingredients: [
         '250 غ لحم بقري مفروم قليل الدهن (10%)',
@@ -241,6 +256,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'l4', code: 'غ4', type: 'lunch', name: 'دجاج تكا مع أرز وسلطة', page: '10',
+      kcal: 1020, protein: 80, carbs: 120, fat: 24,
       note: 'الأرز والسلطة إضافة لإكمال السعرات.',
       prep: 'يُتبَّل الدجاج ويُترك في الثلاجة ساعتين قبل الطهي.',
       ingredients: [
@@ -260,6 +276,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'l5', code: 'غ5', type: 'lunch', name: 'كريمي جارليك تشيكن باستا', page: '5 و6',
+      kcal: 1010, protein: 89, carbs: 106, fat: 24,
       note: 'الكمية هنا ضعف حصة الكتاب تقريبًا.',
       ingredients: [
         '250 غ صدر دجاج',
@@ -285,6 +302,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'l6', code: 'غ6', type: 'lunch', name: 'دجاج تندوري مع بطاطس', page: '16',
+      kcal: 1010, protein: 83, carbs: 112, fat: 26,
       note: 'البطاطس والسلطة إضافة لإكمال السعرات.',
       prep: 'يُتبَّل الدجاج ويُترك ساعتين على الأقل قبل الطهي.',
       ingredients: [
@@ -304,6 +322,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'l7', code: 'غ7', type: 'lunch', name: 'تندر الدجاج مع هاش براونز', page: '1 و4',
+      kcal: 1030, protein: 88, carbs: 105, fat: 27,
       note: 'الكمية نصف وصفة التندر (5 قطع) ونصف وصفة الهاش براونز (4 قطع).',
       prep: 'يحتاج الهاش براونز ساعة في الفريزر قبل الطهي.',
       ingredients: [
@@ -329,6 +348,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'l8', code: 'غ8', type: 'lunch', name: 'مسقعة باللحمة المفرومة مع أرز', page: '13',
+      kcal: 1050, protein: 58, carbs: 134, fat: 32,
       note: 'الأرز واللبن إضافة لإكمال السعرات.',
       ingredients: [
         '200 غ لحم بقري مفروم قليل الدهن (10%)',
@@ -352,7 +372,8 @@ window.PLAN_DATA = {
     },
     {
       id: 'l9', code: 'غ9', type: 'lunch', name: 'أفخاذ دجاج مشوية مع أرز وسلطة', page: '14',
-      note: 'أفخاذ بلا جلد بتتبيلة الفراخ المشوية نفسها، والمجموع نحو 1050 سعرة.',
+      kcal: 1030, protein: 72, carbs: 123, fat: 27,
+      note: 'أفخاذ بلا جلد بتتبيلة الفراخ المشوية نفسها.',
       prep: 'تُتبَّل الأفخاذ وتُترك في الثلاجة ساعتين على الأقل أو ليلة كاملة.',
       ingredients: [
         '300 غ أفخاذ دجاج بلا جلد ولا عظم (وزنها نيئة)',
@@ -372,6 +393,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'l10', code: 'غ10', type: 'lunch', name: 'سبانخ باللحمة مع أرز', page: '26',
+      kcal: 1050, protein: 65, carbs: 140, fat: 27,
       note: 'الأرز الجانبي واللبن إضافة لإكمال السعرات.',
       prep: 'يحتاج اللحم نحو ساعة من السلق قبل الطبخ.',
       ingredients: [
@@ -397,6 +419,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'l11', code: 'غ11', type: 'lunch', name: 'صينية بطاطس باللحمة', page: '25',
+      kcal: 1050, protein: 66, carbs: 139, fat: 25,
       note: 'الخبز إضافة لإكمال السعرات.',
       ingredients: [
         '450 غ بطاطس مقطعة حلقات',
@@ -421,6 +444,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'l12', code: 'غ12', type: 'lunch', name: 'سلطة المكرونة بالتونة وصوص الأفوكادو',
+      kcal: 1040, protein: 80, carbs: 127, fat: 25,
       note: 'الحصة مكبّرة من 600 إلى نحو 1050 سعرة.',
       ingredients: [
         '130 غ مكرونة (وزنها نيئة)',
@@ -439,6 +463,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'l13', code: 'غ13', type: 'lunch', name: 'كفتة اللحمة مع أرز وسلطة', page: '30',
+      kcal: 1050, protein: 57, carbs: 113, fat: 40,
       note: 'الأرز والسلطة إضافة لإكمال السعرات.',
       prep: 'تحتاج الكفتة نصف ساعة في الثلاجة قبل الطهي.',
       ingredients: [
@@ -462,6 +487,7 @@ window.PLAN_DATA = {
     },
     {
       id: 'l14', code: 'غ14', type: 'lunch', name: 'ملوخية مع دجاج مشوي وأرز', page: '20 و14',
+      kcal: 1030, protein: 76, carbs: 128, fat: 22,
       note: 'الكتاب يشوي دجاجة كاملة، وهنا صدر دجاج بالتتبيلة نفسها، والأرز إضافة لإكمال السعرات.',
       prep: 'يُتبَّل الدجاج قبل ساعتين على الأقل، والأفضل من الليلة السابقة.',
       ingredients: [

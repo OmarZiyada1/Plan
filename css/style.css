@@ -387,6 +387,51 @@ b, strong { font-weight: 700; }
 }
 .step.is-on .step__n { background: var(--ink); color: var(--paper); }
 
+/* القيم الغذائية: أربع خانات، الأولى معكوسة */
+.macros {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--b);
+  max-width: 560px;
+  margin: 16px 0 0;
+  border: var(--b) solid var(--ink);
+  background: var(--ink);
+}
+.macros > div {
+  display: flex;
+  flex-direction: column-reverse;   /* القيمة فوق والتسمية تحتها */
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 6px;
+  background: var(--paper);
+  text-align: center;
+}
+.macros > div:first-child { background: var(--ink); color: var(--paper); }
+.macros dt { font-size: var(--fs-xs); font-weight: 500; }
+.macros dd { margin: 0; font-size: var(--fs-l); font-weight: 700; line-height: 1.2; white-space: nowrap; }
+.macros--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 420px; }
+@media (max-width: 359px) { .macros:not(.macros--3) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* جدول القيم: سطر للاسم وسطر للأرقام تحته، فلا يضيق على الهاتف */
+.ntable { width: 100%; max-width: 640px; margin-top: 12px; border-collapse: collapse; }
+.ntable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px 4px;
+  border-bottom: var(--b) solid var(--ink);
+  background: var(--paper);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-align: center;
+}
+@media (min-width: 760px) { .ntable thead th { top: 74px; } }
+.ntable tbody { border-bottom: var(--b-thin) solid var(--ink); }
+.ntable .nt-name th { padding: 12px 0 2px; font-weight: 500; text-align: start; }
+.ntable .nt-name a { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+@media (hover: hover) { .ntable .nt-name a:hover span:last-child { text-decoration: underline; text-underline-offset: 6px; } }
+.ntable td { padding: 2px 4px 12px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+
 /* ---------- التسوق ---------- */
 .shop { margin-top: 20px; }
 @media (min-width: 760px) { .shop { columns: 2; column-gap: 48px; } }

@@ -112,6 +112,21 @@
     return esc(s);
   }
 
+  /* لوحة قيم صغيرة: كل خلية [القيمة، التسمية] */
+  function macroCells(cells, extraClass) {
+    return `<dl class="macros${extraClass ? ' ' + extraClass : ''}">${cells.map(([v, l]) => `<div><dt>${esc(l)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`;
+  }
+
+  function macroStrip(r) {
+    if (r.protein == null) return '';
+    return macroCells([
+      [kcalOf(r), 'سعرة'],
+      [r.protein + ' غ', 'بروتين'],
+      [r.carbs + ' غ', 'كربوهيدرات'],
+      [r.fat + ' غ', 'دهون']
+    ]);
+  }
+
   function segNav(base, items, current, label) {
     return `
       <div class="seg-row">
@@ -216,7 +231,8 @@
 
   function viewRecipe(r) {
     const c = cookOf(r.id);
-    const meta = [typeOf(r).label, kcalOf(r) + ' سعرة'];
+    const meta = [typeOf(r).label];
+    if (r.protein == null) meta.push(kcalOf(r) + ' سعرة');   // بدون قيم غذائية تبقى السعرات هنا
     if (r.page) meta.push('ص ' + r.page);
 
     return `
@@ -224,6 +240,7 @@
       <header class="head">
         <p class="eyebrow"><span class="code">${esc(r.code)}</span><span>${esc(meta.join(' · '))}</span></p>
         <h1 class="title">${esc(r.name)}</h1>
+        ${macroStrip(r)}
         ${r.prep ? `<p class="note"><b>تحضير مسبق:</b> ${esc(r.prep)}</p>` : ''}
         ${r.note ? `<p class="note">${esc(r.note)}</p>` : ''}
         <div class="actions">
@@ -356,6 +373,30 @@
     const perDay = mealTypes.reduce((sum, t) => sum + t.kcal, 0);
     const stats = [[perDay, 'سعرة يوميًّا', true]]
       .concat(mealTypes.map(t => [t.kcal, 'سعرة ' + t.label.replace(/^ال/, 'لل')]));
+
+    /* القيم الغذائية: الهدف اليومي وجدول كل الوجبات */
+    const N = D.nutrition;
+    const withMacros = recipes.filter(r => r.protein != null);
+    const nutrition = N && withMacros.length ? `
+      <section class="block" aria-labelledby="nut-h">
+        <h2 class="h2" id="nut-h">القيم الغذائية</h2>
+        <h3 class="h3 mt-s">الهدف اليومي ${esc(N.target.split)}</h3>
+        ${macroCells([
+          [N.target.protein + ' غ', 'بروتين'],
+          [N.target.carbs + ' غ', 'كربوهيدرات'],
+          [N.target.fat + ' غ', 'دهون']
+        ], 'macros--3')}
+        <p class="hint mt-s">${esc(N.note)}</p>
+        <table class="ntable">
+          <thead><tr>
+            <th scope="col">سعرات</th><th scope="col">بروتين (غ)</th><th scope="col">كربوهيدرات (غ)</th><th scope="col">دهون (غ)</th>
+          </tr></thead>
+          ${withMacros.map(r => `<tbody>
+            <tr class="nt-name"><th colspan="4" scope="rowgroup"><a href="#/recipe/${r.id}"><span class="code">${esc(r.code)}</span><span>${esc(r.name)}</span></a></th></tr>
+            <tr><td>${kcalOf(r)}</td><td>${r.protein}</td><td>${r.carbs}</td><td>${r.fat}</td></tr>
+          </tbody>`).join('')}
+        </table>
+      </section>` : '';
     return `
       <header class="head">
         <p class="eyebrow">${esc(D.meta.title)}</p>
@@ -366,6 +407,8 @@
       </div>
       <p class="lead">${esc(D.basics.intro)}</p>
       <ul class="bullets">${D.basics.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul>
+
+      ${nutrition}
 
       <section class="block settings" aria-labelledby="set-h">
         <h2 class="h2" id="set-h">إعدادات هذا الجهاز</h2>
