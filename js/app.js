@@ -43,7 +43,7 @@
         if (!byId[id]) console.warn('data.js: لا توجد وصفة بالمعرّف', id);
         return Boolean(byId[id]);
       });
-      days.push({ week: wi + 1, day: di + 1, meals: valid });
+      days.push({ n: days.length + 1, week: wi + 1, day: di + 1, meals: valid });
     });
   });
   const WEEKS = D.weeks.length;
@@ -81,6 +81,8 @@
     sel: store.get('sel', {}),        // الأصناف المختارة لكل قائمة
     extra: store.get('extra', {}),    // أصناف أخرى مكتوبة يدويًّا لكل قائمة
     phone: store.get('phone', ''),    // رقم واتساب المستلم (اختياري)
+    calc: readCalc(),                 // حاسبة اليوم: الوجبات المأكولة فعلًا وأي إضافات
+    extraOpen: false,
     filter: 'all',
     q: '',
     cook: {}
@@ -96,6 +98,7 @@
 
   /* العدد والمعدود: [واحد، اثنان، 3–10، 11 فما فوق] */
   const ITEMS = ['صنف واحد', 'صنفان', 'أصناف', 'صنفًا'];
+  const KCAL = ['سعرة واحدة', 'سعرتان', 'سعرات', 'سعرة'];
   function plural(n, forms) {
     if (n === 1) return forms[0];
     if (n === 2) return forms[1];
@@ -146,11 +149,11 @@
         <h1 class="title">الأسبوع ${ordinal(w)}</h1>
       </header>
       ${segNav('plan', range(WEEKS).map(i => [String(i + 1), String(i + 1)]), String(w), 'الأسبوع')}
-      <p class="hint mt-s">اضغط على الوجبة لعرض وصفتها.</p>
+      <p class="hint mt-s">اضغط على الوجبة لعرض وصفتها، أو على رقم اليوم لحساب سعراته.</p>
       <ol class="days">
         ${list.map(d => `
           <li class="day">
-            <div class="day__num"><span class="day__l">اليوم</span><span class="day__n">${d.day}</span></div>
+            <a class="day__num" href="#/calc/${d.n}" aria-label="${esc('احسب سعرات اليوم ' + d.day)}"><span class="day__l">اليوم</span><span class="day__n">${d.day}</span></a>
             <div class="day__body">
               ${d.meals.map(id => {
                 const r = byId[id];
@@ -368,6 +371,171 @@
       <div class="sendbar" id="sendbar">${sendBar(id)}</div>`;
   }
 
+  /* ========== عرض: حاسبة اليوم ==========
+   * يختار المستخدم ما أكله فعلًا (ولو من يوم آخر)، فتُجمع السعرات والقيم الغذائية
+   * ويظهر ما ينقصه من البروتين. الاختيار يُمسح تلقائيًّا في اليوم التالي. */
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  }
+  function emptyCalc() { return { day: todayKey(), meals: [], extras: [], from: null }; }
+  function readCalc() {
+    const c = store.get('calc', null);
+    if (!c || c.day !== todayKey() || !Array.isArray(c.meals) || !Array.isArray(c.extras)) return emptyCalc();
+    c.meals = c.meals.filter(id => byId[id]);
+    return c;
+  }
+  const saveCalc = () => store.set('calc', state.calc);
+  /* إذا بقيت الصفحة مفتوحة حتى اليوم التالي يبدأ الحساب من جديد؛ ترجع true عند المسح */
+  function ensureCalcDay() {
+    if (state.calc.day === todayKey()) return false;
+    state.calc = emptyCalc();
+    saveCalc();
+    return true;
+  }
+
+  const round = n => Math.round(n);
+  function calcTarget() {
+    const T = (D.nutrition && D.nutrition.target) || {};
+    return { kcal: mealTypes.reduce((s, t) => s + t.kcal, 0), protein: T.protein || 0, carbs: T.carbs || 0, fat: T.fat || 0 };
+  }
+  function calcTotals() {
+    const t = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+    state.calc.meals.forEach(id => {
+      const r = byId[id];
+      t.kcal += kcalOf(r);
+      t.protein += r.protein || 0;
+      t.carbs += r.carbs || 0;
+      t.fat += r.fat || 0;
+    });
+    state.calc.extras.forEach(x => {
+      t.kcal += x.kcal; t.protein += x.protein; t.carbs += x.carbs; t.fat += x.fat;
+    });
+    return t;
+  }
+
+  function calcSummary() {
+    const t = calcTotals();
+    const g = calcTarget();
+    const miss = g.protein - t.protein;
+    const head = miss > 0
+      ? `<p class="calc__l">ينقصك</p><p class="calc__big">${round(miss)} غ بروتين</p><p class="hint">للوصول إلى ${g.protein} غ في اليوم.</p>`
+      : `<p class="calc__l">البروتين</p><p class="calc__big">وصلت إلى الهدف</p><p class="hint">${round(t.protein)} من ${g.protein} غ${miss < 0 ? '، بزيادة ' + round(-miss) + ' غ' : ''}.</p>`;
+    const rows = [
+      ['السعرات', t.kcal, g.kcal, n => plural(n, KCAL)],
+      ['البروتين', t.protein, g.protein, n => n + ' غ'],
+      ['الكربوهيدرات', t.carbs, g.carbs, n => n + ' غ'],
+      ['الدهون', t.fat, g.fat, n => n + ' غ']
+    ];
+    return head + `<ul class="bars">${rows.map(([label, value, goal, unit]) => {
+      const v = round(value);
+      const pct = goal ? Math.min(100, value / goal * 100) : 0;
+      const diff = v - goal;
+      const note = diff > 0 ? 'زيادة ' + unit(diff) : diff < 0 ? 'باقي ' + unit(-diff) : 'تمام';
+      return `<li>
+        <div class="bars__top"><span>${label}</span><span><b>${v}</b> من ${goal}</span></div>
+        <div class="bars__track" role="progressbar" aria-label="${label}" aria-valuemin="0" aria-valuemax="${goal}" aria-valuenow="${v}"><span style="width:${pct}%"></span></div>
+        <div class="bars__note">${note}</div>
+      </li>`;
+    }).join('')}</ul>`;
+  }
+
+  function calcBar() {
+    const t = calcTotals();
+    const miss = calcTarget().protein - t.protein;
+    return `<span class="sendbar__n">${round(t.kcal)} سعرة</span>
+      <strong>${miss > 0 ? 'ينقصك ' + round(miss) + ' غ بروتين' : 'البروتين مكتمل'}</strong>`;
+  }
+
+  function calcActions() {
+    return state.calc.meals.length || state.calc.extras.length
+      ? '<button type="button" class="link" data-action="calc-reset" data-k="calc-reset">مسح الكل</button>'
+      : '';
+  }
+
+  /* تحديث الملخص فقط، دون إعادة رسم القائمة */
+  function updateCalc() {
+    const parts = { 'calc-summary': calcSummary, 'calc-bar': calcBar, 'calc-actions': calcActions };
+    Object.keys(parts).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = parts[id]();
+    });
+  }
+
+  function pickMeal(r) {
+    const on = state.calc.meals.includes(r.id);
+    const meta = [kcalOf(r) + ' سعرة'];
+    if (r.protein != null) meta.push('بروتين ' + r.protein + ' غ');
+    return `<li><button type="button" class="item item--meal${on ? ' is-on' : ''}" aria-pressed="${on}"
+      data-action="calc-meal" data-id="${r.id}" data-k="cm-${r.id}">
+      <span class="box"></span>
+      <span class="item__body"><span class="item__name">${esc(r.code)} · ${esc(r.name)}</span><span class="item__meta">${esc(meta.join(' · '))}</span></span>
+    </button></li>`;
+  }
+
+  function viewCalc() {
+    ensureCalcDay();
+    const c = state.calc;
+    const extras = c.extras.length ? `
+      <section class="block" aria-labelledby="cx-h">
+        <h2 class="h3 shop__h" id="cx-h">إضافات</h2>
+        <ul>${c.extras.map((x, i) => `<li class="xrow">
+          <span class="item__body">
+            <span class="item__name">${esc(x.name || 'طعام آخر')}</span>
+            <span class="item__meta">${round(x.kcal)} سعرة · بروتين ${round(x.protein)} غ · كربوهيدرات ${round(x.carbs)} غ · دهون ${round(x.fat)} غ</span>
+          </span>
+          <button type="button" class="link" data-action="calc-del" data-i="${i}" data-k="cd-${i}">حذف</button>
+        </li>`).join('')}</ul>
+      </section>` : '';
+
+    return `
+      <header class="head">
+        <p class="eyebrow">حاسبة اليوم</p>
+        <h1 class="title">ماذا أكلت اليوم؟</h1>
+        <p class="hint mt-s">اختر الوجبات التي أكلتها فعلًا، ولو كانت من يوم آخر في الخطة.</p>
+        ${c.from ? `<p class="hint">بدأت من الخطة: الأسبوع ${ordinal(c.from.week)}، اليوم ${c.from.day}.</p>` : ''}
+      </header>
+
+      <section class="calc" id="calc-summary" aria-live="polite">${calcSummary()}</section>
+      <div class="actions" id="calc-actions">${calcActions()}</div>
+
+      ${mealTypes.map(t => `
+        <section class="block" aria-labelledby="ct-${t.key}">
+          <h2 class="h3 shop__h" id="ct-${t.key}">${esc(t.label)}</h2>
+          <ul>${recipes.filter(r => r.type === t.key).map(pickMeal).join('')}</ul>
+        </section>`).join('')}
+
+      ${extras}
+
+      <details class="extra"${state.extraOpen ? ' open' : ''}>
+        <summary class="link">إضافة طعام آخر</summary>
+        <form class="extra-form" id="extra-form" autocomplete="off">
+          <label class="field"><span class="field__l">الاسم (اختياري)</span><input class="input" name="name" maxlength="60"></label>
+          <div class="extra-grid">
+            <label class="field"><span class="field__l">سعرات</span><input class="input" name="kcal" inputmode="decimal"></label>
+            <label class="field"><span class="field__l">بروتين (غ)</span><input class="input" name="protein" inputmode="decimal"></label>
+            <label class="field"><span class="field__l">كربوهيدرات (غ)</span><input class="input" name="carbs" inputmode="decimal"></label>
+            <label class="field"><span class="field__l">دهون (غ)</span><input class="input" name="fat" inputmode="decimal"></label>
+          </div>
+          <p class="hint">إذا تركت السعرات فارغة تُحسب من البروتين والكربوهيدرات والدهون.</p>
+          <button type="submit" class="btn" data-k="extra-add">إضافة</button>
+        </form>
+      </details>
+
+      <p class="hint block">يُمسح الاختيار تلقائيًّا في اليوم التالي، ويُحفظ على هذا الجهاز فقط.</p>
+
+      <div class="sendbar" id="calc-bar">${calcBar()}</div>`;
+  }
+
+  /* أرقام عربية أو لاتينية، مع الفاصلة العشرية العربية */
+  function parseNum(v) {
+    const s = String(v == null ? '' : v).trim()
+      .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+      .replace(/[٫,]/g, '.');
+    const n = Number(s);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }
+
   /* ========== عرض: معلومات ========== */
   function viewInfo() {
     const perDay = mealTypes.reduce((sum, t) => sum + t.kcal, 0);
@@ -499,6 +667,19 @@
         state.list = id;
         store.set('list', id);
         html = viewShop(id); title = 'التسوق'; break;
+      }
+      case 'calc': {
+        /* #/calc/N يملأ الحاسبة بوجبات يوم N من الخطة مرة واحدة، ثم يصير الرابط #/calc */
+        if (r.arg) {
+          const d = days[clampInt(r.arg, 1, days.length, 1) - 1];
+          ensureCalcDay();
+          state.calc.meals = d.meals.slice();
+          state.calc.from = { week: d.week, day: d.day };
+          saveCalc();
+          history.replaceState(null, '', '#/calc');
+          if (stack.length) stack[stack.length - 1] = '#/calc';
+        }
+        html = viewCalc(); title = 'حاسبة اليوم'; break;
       }
       case 'info':
         html = viewInfo(); title = 'معلومات'; break;
@@ -635,6 +816,30 @@
         refresh();
         break;
 
+      case 'calc-meal': {
+        if (ensureCalcDay()) { refresh(); break; }
+        const meals = new Set(state.calc.meals);
+        toggleIn(meals, el.dataset.id);
+        /* الترتيب كما في قائمة الوصفات */
+        state.calc.meals = recipes.map(r => r.id).filter(id => meals.has(id));
+        saveCalc();
+        setPressed(el, meals.has(el.dataset.id));
+        updateCalc();
+        break;
+      }
+
+      case 'calc-del':
+        state.calc.extras.splice(+el.dataset.i, 1);
+        saveCalc();
+        refresh();
+        break;
+
+      case 'calc-reset':
+        state.calc = emptyCalc();
+        saveCalc();
+        refresh();
+        break;
+
       case 'share':
         void share(el);
         break;
@@ -662,6 +867,32 @@
       store.set('phone', state.phone);
     }
   });
+
+  /* إضافة طعام يدويًّا في الحاسبة */
+  document.addEventListener('submit', e => {
+    if (e.target.id !== 'extra-form') return;
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const x = {
+      name: String(f.get('name') || '').trim().slice(0, 60),
+      kcal: parseNum(f.get('kcal')),
+      protein: parseNum(f.get('protein')),
+      carbs: parseNum(f.get('carbs')),
+      fat: parseNum(f.get('fat'))
+    };
+    if (!x.kcal && !x.protein && !x.carbs && !x.fat) return;
+    if (!x.kcal) x.kcal = round(x.protein * 4 + x.carbs * 4 + x.fat * 9);
+    ensureCalcDay();
+    state.calc.extras.push(x);
+    saveCalc();
+    state.extraOpen = true;
+    refresh();
+  });
+
+  /* تذكّر إن كان نموذج الإضافة مفتوحًا */
+  document.addEventListener('toggle', e => {
+    if (e.target.classList && e.target.classList.contains('extra')) state.extraOpen = e.target.open;
+  }, true);
 
   document.addEventListener('keydown', e => {
     if (e.target.id === 'q' && e.key === 'Enter') e.target.blur();   // يخفي لوحة المفاتيح على الهاتف
